@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="BigFatFish Bot">
+  <path d="M44 32 L57 21 L61 25 L56 32 L61 39 L57 43 Z" fill="#1F63BC"/>
+  <path d="M25 18 L29 10 L36 16 Z" fill="#1F63BC"/>
+  <path fill-rule="evenodd" d="M6 32 C12 20 24 16 33 16 C39 16 44 23 44 32 C44 41 39 48 33 48 C24 48 12 44 6 32 Z M20 28 m-3.2 0 a3.2 3.2 0 1 0 6.4 0 a3.2 3.2 0 1 0 -6.4 0 Z" fill="#2F7FE0"/>
+</svg>

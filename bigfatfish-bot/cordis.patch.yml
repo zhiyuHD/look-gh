@@ -1,0 +1,115 @@
+# BigFatFish Bot — DSH bundle patch
+# Webhook ingress: https://your-webhook.example (Caddy rewrite / -> /github) -> 127.0.0.1:5562
+# The plugin owns its signed HTTP ingress (no extra npm packages required).
+
+# Extra permission preset for unattended bot sessions: kernel file isolation
+# (workspace + temp only) instead of full access, and approval `never` so the
+# headless session can never block on — or request — a waiver.
+- id: permission
+  name: '@deepseek-ai/dsh-permission-presets'
+  config:
+    presets:
+      workspace-write:
+        sandbox: workspace-write
+        approval: ask
+        name: workspace-write
+        description: Write inside the workspace and permitted temporary directories; wider retries require approval.
+      danger-full-access:
+        sandbox: danger-full-access
+        approval: never
+        name: danger-full-access
+        description: Full file access without approval prompts.
+      bot-sandbox:
+        sandbox: workspace-write
+        approval: never
+        name: bot-sandbox
+        description: BigFatFish unattended sessions — writes confined to the repository workspace, no approval prompts.
+    defaultPreset: workspace-write
+
+- insert:
+    # Minimal agent preset for untrusted repositories: no web, subagent,
+    # workflow, skill, plugin-manager, goal, schedule or ask-user tools.
+    - id: preset-bigfatfish
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: bigfatfish-bot
+        order: 5
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: You are a coding agent powered by the {{model}} model.
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: time-context
+            name: '@deepseek-ai/dsh-time-context'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              applyPatch: false
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+
+    - id: bigfatfish-github-rule
+      name: 'bigfatfish-bot'
+      config:
+        appId: '123456'
+        appSlug: bigfatfish-bot
+        privateKeyPath: /path/to/secrets/github-app.pem
+        webhookSecretPath: /path/to/secrets/webhook-secret
+        allowedRepos:
+          - example/your-repo
+        mention: bigfatfish-bot
+        workspaceRoot: /path/to/look-gh
+        agentPreset: bigfatfish-bot
+        permissionPreset: bot-sandbox
+        branchPrefix: dsh/issue-
+        approvalAssociations: [OWNER, COLLABORATOR, MEMBER]
+        approvalKeywords: ['/approve', 同意, 批准, 可以开工, 开工, approve, lgtm]
+        denyKeywords: [不同意, 不批, 先别, 不要, 暂缓, hold]
+        dailyIssueLimit: 5
+        quotaTimeZone: Asia/Shanghai
+        maxConcurrentSessions: 2
+        maxQueuePerRepo: 5
+        sessionTimeoutMs: 1800000
+        maxIssueContextChars: 20000
+        maxReplyChars: 6000
+        modelProvider: deepseek-account
+        modelId: deepseek-flash
+        usageRoutePath: /bigfatfish/usage
+        ingressHost: '127.0.0.1'
+        ingressPort: 5562
+        ingressPath: /github
+        maxBodyBytes: 5242880
+        relayEnabled: true
+        relayHost: '127.0.0.1'
+        relayPort: 5563
+        relayKey: 'local-dev-key'
+        relayProvider: deepseek-account
+        relayModel: deepseek-flash
+        relayPriceInputCnyPerM: 2
+        relayPriceOutputCnyPerM: 8
+        relayInitialCreditCny: 5
